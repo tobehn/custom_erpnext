@@ -9,19 +9,20 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Repository
+      - name: Checkout custom_erpnext
         uses: actions/checkout@v3
 
       - name: Clone frappe_docker
         run: git clone https://github.com/frappe/frappe_docker
 
       - name: Set up APPS_JSON_BASE64
+        id: encode
         run: |
           export BASE64=$(cat apps.json | base64 -w 0)
           echo "APPS_JSON_BASE64=$BASE64" >> $GITHUB_ENV
 
-      - name: Login to GitHub Container Registry
-        run: echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u tobehn --password-stdin
+      - name: Log in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
       - name: Build Docker image
         run: |
@@ -31,9 +32,9 @@ jobs:
             --build-arg=PYTHON_VERSION=3.11.9 \
             --build-arg=NODE_VERSION=18.20.2 \
             --build-arg=APPS_JSON_BASE64=$APPS_JSON_BASE64 \
-            --tag=ghcr.io/tobehn/custom_erpnext:latest \
+            --tag=ghcr.io/${{ github.actor }}/custom_erpnext:latest \
             --file=frappe_docker/images/custom/Containerfile \
             frappe_docker
-
+          
       - name: Push Docker image
-        run: docker push ghcr.io/tobehn/custom_erpnext:latest
+        run: docker push ghcr.io/${{ github.actor }}/custom_erpnext:latest
